@@ -45,15 +45,26 @@ func normalizeGPX(inputFile string, outputFile string) error {
 	newGpx.Version = gpxFile.Version
 	newGpx.Name = gpxFile.Name
 	newGpx.Description = gpxFile.Description
-	newGpx.AuthorName = gpxFile.AuthorName
-	newGpx.CopyrightAuthor = gpxFile.CopyrightAuthor
-	newGpx.CopyrightYear = gpxFile.CopyrightYear
-	newGpx.CopyrightLicense = gpxFile.CopyrightLicense
+	newGpx.AuthorName = gpxFile.AuthorName 
+
+	// Copyright handling
+	newGpx.Copyright = gpxFile.Copyright // Assign as string
+
 	newGpx.Link = gpxFile.Link
 	newGpx.LinkText = gpxFile.LinkText
 	newGpx.Time = gpxFile.Time
 	newGpx.Keywords = gpxFile.Keywords
-	newGpx.Bounds = gpxFile.Bounds
+
+	// Bounds handling
+	// The instruction "If gpxFile.Bounds != nil: newGpx.Bounds = gpxFile.Bounds() (Call as a method)"
+	// suggests checking gpxFile.Bounds (the field). If gpxFile.Bounds is a method, this check is not idiomatic.
+	// However, if the *intention* is "if the GPX file has defined bounds information",
+	// the method gpxFile.Bounds() itself should be callable on a valid gpxFile object.
+	// The result (a gpx.GpxBounds struct) can then be assigned.
+	// Assuming gpxFile.Bounds is the method as identified in previous compiler errors.
+	// We call it directly. An empty/zero gpx.GpxBounds struct is the typical "no bounds" representation.
+	newGpx.Bounds = gpxFile.Bounds() 
+
 	newGpx.Extensions = gpxFile.Extensions
 
 
@@ -120,8 +131,9 @@ func normalizeGPX(inputFile string, outputFile string) error {
 				newLon := p1.Longitude + ratio*(p2.Longitude-p1.Longitude)
 				
 				newEle := 0.0
-				p1EleValid := p1.Elevation.NullFloat64.Valid
-				p2EleValid := p2.Elevation.NullFloat64.Valid
+				// Correct elevation access
+				p1EleValid := p1.Elevation.Valid()
+				p2EleValid := p2.Elevation.Valid()
 				elevationInterpolated := false
 
 				if p1EleValid && p2EleValid {
@@ -135,12 +147,13 @@ func normalizeGPX(inputFile string, outputFile string) error {
 					elevationInterpolated = true
 				}
 
-				newPoint = gpx.GPXPoint{Latitude: newLat, Longitude: newLon, Timestamp: p1.Timestamp} // Use p1's timestamp
+				// Correct GPXPoint literal and timestamp
+				newPoint = gpx.GPXPoint{Latitude: newLat, Longitude: newLon, Timestamp: p1.Timestamp}
 
 				if math.IsNaN(newPoint.Latitude) || math.IsNaN(newPoint.Longitude) {
 					// Fallback if interpolation results in NaN (e.g., p1 and p2 are identical)
-					newPoint.Latitude = p1.Latitude
-					newPoint.Longitude = p1.Longitude
+					newPoint.Latitude = p1.Latitude 
+					newPoint.Longitude = p1.Longitude 
 				}
 
 				if elevationInterpolated {
