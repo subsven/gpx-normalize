@@ -2,9 +2,8 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"math" // Added for math operations
+	"os"
 
 	"github.com/tkrajina/gpxgo/gpx"
 )
@@ -46,16 +45,15 @@ func normalizeGPX(inputFile string, outputFile string) error {
 	newGpx.Name = gpxFile.Name
 	newGpx.Description = gpxFile.Description
 	newGpx.AuthorName = gpxFile.AuthorName
-	newGpx.CopyrightAuthor = gpxFile.CopyrightAuthor
+	newGpx.Copyright = gpxFile.Copyright
 	newGpx.CopyrightYear = gpxFile.CopyrightYear
 	newGpx.CopyrightLicense = gpxFile.CopyrightLicense
 	newGpx.Link = gpxFile.Link
 	newGpx.LinkText = gpxFile.LinkText
 	newGpx.Time = gpxFile.Time
 	newGpx.Keywords = gpxFile.Keywords
-	newGpx.Bounds = gpxFile.Bounds
 	newGpx.Extensions = gpxFile.Extensions
-
+	newGpx.MetadataExtensions = gpxFile.MetadataExtensions
 
 	// Create a new GPXTrack and add it to the new GPX object
 	newTrack := gpx.GPXTrack{}
@@ -113,15 +111,19 @@ func normalizeGPX(inputFile string, outputFile string) error {
 					ratio = (targetDistForCurrentPoint - distToP1) / distP1P2
 				}
 				// Clamp ratio to [0, 1] to handle floating point inaccuracies or edge cases
-				if ratio < 0 { ratio = 0 }
-				if ratio > 1 { ratio = 1 }
+				if ratio < 0 {
+					ratio = 0
+				}
+				if ratio > 1 {
+					ratio = 1
+				}
 
 				newLat := p1.Latitude + ratio*(p2.Latitude-p1.Latitude)
 				newLon := p1.Longitude + ratio*(p2.Longitude-p1.Longitude)
-				
+
 				newEle := 0.0
-				p1EleValid := p1.Elevation.NullFloat64.Valid
-				p2EleValid := p2.Elevation.NullFloat64.Valid
+				p1EleValid := p1.Elevation.NotNull()
+				p2EleValid := p2.Elevation.NotNull()
 				elevationInterpolated := false
 
 				if p1EleValid && p2EleValid {
@@ -135,7 +137,9 @@ func normalizeGPX(inputFile string, outputFile string) error {
 					elevationInterpolated = true
 				}
 
-				newPoint = gpx.GPXPoint{Latitude: newLat, Longitude: newLon, Timestamp: p1.Timestamp} // Use p1's timestamp
+				newPoint = gpx.GPXPoint{Timestamp: p1.Timestamp} // Use p1's timestamp
+				newPoint.Latitude = newLat
+				newPoint.Longitude = newLon
 
 				if math.IsNaN(newPoint.Latitude) || math.IsNaN(newPoint.Longitude) {
 					// Fallback if interpolation results in NaN (e.g., p1 and p2 are identical)
@@ -164,7 +168,6 @@ func normalizeGPX(inputFile string, outputFile string) error {
 	} else if len(*newSegmentPoints) > numTargetPoints { // Truncate if somehow we overshot
 		*newSegmentPoints = (*newSegmentPoints)[:numTargetPoints]
 	}
-
 
 	// Convert the new GPX object to XML bytes
 	xmlBytes, err := newGpx.ToXml(gpx.ToXmlParams{Version: "1.1", Indent: true})

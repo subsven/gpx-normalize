@@ -22,10 +22,10 @@ func compareGPXPoints(t *testing.T, p1, p2 gpx.GPXPoint, msgAndArgs ...interface
 	if p1.Longitude != p2.Longitude {
 		t.Errorf("Longitude mismatch: expected %f, got %f. %s", p1.Longitude, p2.Longitude, fmt.Sprint(msgAndArgs...))
 	}
-	if p1.Elevation.NullFloat64.Valid != p2.Elevation.NullFloat64.Valid {
-		t.Errorf("Elevation validity mismatch: expected %v, got %v. %s", p1.Elevation.NullFloat64.Valid, p2.Elevation.NullFloat64.Valid, fmt.Sprint(msgAndArgs...))
+	if p1.Elevation.NotNull() != p2.Elevation.NotNull() {
+		t.Errorf("Elevation validity mismatch: expected %v, got %v. %s", p1.Elevation.NotNull(), p2.Elevation.NotNull(), fmt.Sprint(msgAndArgs...))
 	}
-	if p1.Elevation.NullFloat64.Valid && p2.Elevation.NullFloat64.Valid {
+	if p1.Elevation.NotNull() && p2.Elevation.NotNull() {
 		if p1.Elevation.Value() != p2.Elevation.Value() {
 			t.Errorf("Elevation value mismatch: expected %f, got %f. %s", p1.Elevation.Value(), p2.Elevation.Value(), fmt.Sprint(msgAndArgs...))
 		}
@@ -76,30 +76,30 @@ func TestNormalizeGPX_SuccessfulNormalization(t *testing.T) {
 		t.Logf("Total distance is 0, skipping equidistance check for distinct points.")
 	} else if totalDistance > 0 {
 		expectedInterval := totalDistance / float64(numExpectedPoints-1)
-		
-		testIntervals := [][2]int{{0, 1}, {numExpectedPoints / 2 -1, numExpectedPoints / 2}, {numExpectedPoints - 2, numExpectedPoints - 1}}
+
+		testIntervals := [][2]int{{0, 1}, {numExpectedPoints/2 - 1, numExpectedPoints / 2}, {numExpectedPoints - 2, numExpectedPoints - 1}}
 
 		for _, intervalIdx := range testIntervals {
 			p1 := normalizedPoints[intervalIdx[0]]
 			p2 := normalizedPoints[intervalIdx[1]]
 			dist := p1.Distance2D(&p2)
-			
+
 			// Allow for some tolerance, especially if expectedInterval is very small
 			// or for the very first/last segments which might have slight variations.
 			// If expectedInterval is zero (e.g. only 1 unique point repeated), this check is skipped.
 			// Using 1e-9 as a threshold for "effectively zero" distance or interval.
-			if expectedInterval > 1e-9 { 
+			if expectedInterval > 1e-9 {
 				tolerance := 0.01 // 1% tolerance, as per instructions
-				relativeDifference := math.Abs(dist - expectedInterval) / expectedInterval
+				relativeDifference := math.Abs(dist-expectedInterval) / expectedInterval
 				if relativeDifference > tolerance {
 					t.Errorf("Equidistance check failed for points %d-%d: expected interval ~%.6f, got %.6f. Relative difference: %.6f > tolerance %.6f",
 						intervalIdx[0], intervalIdx[1], expectedInterval, dist, relativeDifference, tolerance)
 				}
-			// If expectedInterval is effectively zero, then dist should also be effectively zero.
-			} else if dist > 1e-9 { 
-                 t.Errorf("Equidistance check failed for points %d-%d: expected interval ~0 (<=1e-9), got %.6f (>1e-9)", 
-				 	intervalIdx[0], intervalIdx[1], dist)
-            }
+				// If expectedInterval is effectively zero, then dist should also be effectively zero.
+			} else if dist > 1e-9 {
+				t.Errorf("Equidistance check failed for points %d-%d: expected interval ~0 (<=1e-9), got %.6f (>1e-9)",
+					intervalIdx[0], intervalIdx[1], dist)
+			}
 		}
 	}
 }
@@ -107,7 +107,7 @@ func TestNormalizeGPX_SuccessfulNormalization(t *testing.T) {
 func TestNormalizeGPX_LessThanTwoPoints(t *testing.T) {
 	inputFile := filepath.Join(testFileDir, "one_point.gpx")
 	outputFile := "normalized-one_point.gpx" // Will not be created if error occurs as expected
-	defer os.Remove(outputFile) // Cleanup in case it is created
+	defer os.Remove(outputFile)              // Cleanup in case it is created
 
 	err := normalizeGPX(inputFile, outputFile)
 	if err == nil {
@@ -155,7 +155,7 @@ func TestNormalizeGPX_ZeroDistancePoints(t *testing.T) {
 func TestNormalizeGPX_NonExistentFile(t *testing.T) {
 	inputFile := "non_existent_file.gpx"
 	outputFile := "normalized-non_existent.gpx" // Will not be created
-	defer os.Remove(outputFile) // Cleanup in case it is created
+	defer os.Remove(outputFile)                 // Cleanup in case it is created
 
 	err := normalizeGPX(inputFile, outputFile)
 	if err == nil {
