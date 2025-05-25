@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>Sample Track</name>
+    <trkseg>
+      <trkpt lat="35.0" lon="-100.0"><ele>100</ele></trkpt>
+      <trkpt lat="35.1" lon="-100.1"><ele>110</ele></trkpt>
+      <trkpt lat="35.2" lon="-100.2"><ele>120</ele></trkpt>
+      <trkpt lat="35.3" lon="-100.3"><ele>130</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
